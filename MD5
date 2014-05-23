@@ -1,4 +1,4 @@
-a4fdef14f68ca72d177aae4e26777475 *DESCRIPTION
+f93be8b48164fa116b179a7fdd4d273f *DESCRIPTION
 b67e374434a179d563b17955294cb7e9 *NAMESPACE
 f77a9eecb5e67ec3e8e633f704044811 *R/aaa.R
 c38cdf7747cf327bbbc02a6239b0c310 *R/filechoose.R
@@ -262,7 +262,7 @@ c9bee21e527a0af22d73647d4a8b20d9 *inst/www/icons/Icons32x32/page_white_vector.pn
 5db818c4a84a946c5d77b11a59320273 *inst/www/icons/Icons32x32/page_white_zip.png
 871d493252e62fda202cfaf1bad3cdb2 *inst/www/icons/Icons32x32/page_word.png
 aafd09242ac4ef0ddc24d8aae49b97be *inst/www/icons/readme-fatcow.txt
-76e54905fbd3893a053651449481a3e2 *inst/www/shinyFiles.js
+c1ff6e90d50177dc960c2d673bbdb3e0 *inst/www/shinyFiles.js
 f8f51fc6aa43a1f9a715c9d06bcdbacd *inst/www/styles.css
 6136727a94a56c087f1a2adfcfe4f623 *man/fileGetter.Rd
 c0f6637684a80f8496e75dd38fae636d *man/getVolumes.Rd
