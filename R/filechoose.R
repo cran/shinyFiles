@@ -41,6 +41,7 @@ fileGetter <- function(roots, restrictions, filetypes, hidden=FALSE) {
         if (missing(root)) root <- names(currentRoots)[1]
         
         fulldir <- file.path(currentRoots[root], dir)
+        writable <- as.logical(file.access(fulldir, 2) == 0)
         files <- list.files(fulldir, all.files=hidden, full.names=TRUE, no..=TRUE)
         files <- gsub(pattern='//*', '/', files, perl=TRUE)
         if (!is.null(restrictions) && length(files) != 0) {
@@ -64,6 +65,8 @@ fileGetter <- function(roots, restrictions, filetypes, hidden=FALSE) {
         breadcrumps <- strsplit(dir, .Platform$file.sep)[[1]]
         list(
             files=fileInfo[, c('filename', 'extension', 'isdir', 'size', 'mtime', 'ctime', 'atime')],
+            writable=writable,
+            exist=file.exists(fulldir),
             breadcrumps=I(c('', breadcrumps[breadcrumps != ''])),
             roots=I(names(currentRoots)),
             root=root
@@ -73,17 +76,10 @@ fileGetter <- function(roots, restrictions, filetypes, hidden=FALSE) {
 
 #' Create a connection to the server side filesystem
 #' 
-#' NOTE: The syntax for this version has changed with version 0.4.0. Prior to
-#' that version the output of \code{shinyFileChoose()} should be assigned to the
-#' output object. This is no longer the case and doind so will result in an 
-#' error. In newer versions the function returns an observer which can be 
-#' ignored for the most part, or assigned to a variable if there needs to be 
-#' interactions with it later on.
-#' 
-#' This function sets up the required connection to the client in order for the 
+#' These function sets up the required connection to the client in order for the 
 #' user to navigate the filesystem. For this to work a matching button should be
-#' present in the html, either by using \code{shinyFilesButton()} or adding it
-#' manually. See \code{\link{shinyFilesButton}} for more information on this.
+#' present in the html, either by using one of the button generating functions 
+#' or adding it manually. See \code{\link{shinyFiles-buttons}} for more details.
 #' 
 #' Restrictions on the access rights of the client can be given in several ways.
 #' The root parameter specifies the starting position for the filesystem as 
@@ -91,13 +87,13 @@ fileGetter <- function(roots, restrictions, filetypes, hidden=FALSE) {
 #' subdirectories of the root. Paths passed of to the \code{restrictions} 
 #' parameter will not show up in the client view, and it is impossible to 
 #' navigate into these subdirectories. The \code{filetypes} parameter takes a 
-#' vector of of file extensions to filter the output on, so that the client is 
+#' vector of file extensions to filter the output on, so that the client is 
 #' only presented with these filetypes. The \code{hidden} parameter toggles 
-#' whether hidden files should be visible or not. Whenever a file choice is made
-#' the resulting files will be accessible in the input variable with the id 
-#' given in the parameters. This value should probable be run through a call to 
-#' \code{\link{parseFilePaths}} in order to get well formatted paths to work 
-#' with.
+#' whether hidden files should be visible or not. Whenever a file or folder 
+#' choice is made the resulting files/folder will be accessible in the input 
+#' variable with the id given in the parameters. This value should probable be 
+#' run through a call to one of the parser (\code{\link{shinyFiles-parsers}}) in 
+#' order to get well formatted paths to work with.
 #' 
 #' @param input The input object of the \code{shinyServer()} call (usaully 
 #' \code{input})
@@ -114,16 +110,22 @@ fileGetter <- function(roots, restrictions, filetypes, hidden=FALSE) {
 #' @param session The session object of the shinyServer call (usually 
 #' \code{session}).
 #' 
-#' @param ... Arguments to be passed on to \code{\link{fileGetter}}
+#' @param ... Arguments to be passed on to \code{\link{fileGetter}} or 
+#' \code{\link{dirGetter}}
 #' 
 #' @return A reactive observer that takes care of the server side logic of the 
-#' filesystem connection. Prior to v0.4.0 the return was a reactive expression
-#' that needed to be assigned to the output variable. As of now this is no longer
-#' allowed and will lead to an error (as reactive observers cannot be assigned
-#' to output)
+#' filesystem connection.
+#' 
+#' @note The syntax for this version has changed with version 0.4.0. Prior to
+#' that version the output of \code{shinyFileChoose()} should be assigned to the
+#' output object. This is no longer the case and doing so will result in an 
+#' error. In newer versions the function returns an observer which can be 
+#' ignored for the most part, or assigned to a variable if there needs to be 
+#' interactions with it later on.
 #' 
 #' @examples
 #' \dontrun{
+#' # File selections
 #' ui <- shinyUI(bootstrapPage(
 #'     shinyFilesButton('files', 'File select', 'Please select a file', FALSE)
 #' ))
@@ -137,6 +139,9 @@ fileGetter <- function(roots, restrictions, filetypes, hidden=FALSE) {
 #'     server=server
 #' ))
 #' }
+#' 
+#' @rdname shinyFiles-observers
+#' @name shinyFiles-observers
 #' 
 #' @family shinyFiles
 #' 
@@ -165,36 +170,74 @@ shinyFileChoose <- function(input, id, updateFreq=2000, session, ...) {
     }))
 }
 
-#' Create a button to summon the file system navigator
+#' Create a button to summon a shinyFiles dialog
 #' 
 #' This function adds the required html markup for the client to access the file
 #' system. The end result will be the appearance of a button on the webpage that
-#' summons the file system navigator dialog box. The last position in the file
+#' summons one of the shinyFiles dialog boxes. The last position in the file
 #' system is automatically remembered between instances, but not shared between 
-#' several shinyFiles buttons. After adding a shinyFiles button the selected 
-#' file(s) will be available in \code{input$inputId} (providing \code{input} is 
-#' the name of the input object in the \code{shinyServer()} call). The file 
-#' names should be parsed with \code{\link{parseFilePaths}} before usage though,
-#' to make them compliant with the \code{\link[shiny]{fileInput}} function.
+#' several shinyFiles buttons. For a button to have any functionality it must
+#' have a matching observer on the server side. shinyFilesButton() is matched 
+#' with shinyFileChoose() and shinyDirButton with shinyDirChoose(). The id
+#' argument of two matching calls must be the same. See 
+#' \code{\link{shinyFiles-observers}} on how to handle client input on the 
+#' server side.
 #' 
 #' @details
+#' \strong{Selecting files}
+#' 
 #' When a user selects one or several files the corresponding input variable is
 #' set to a list containing a character vector for each file. The character 
 #' vectors gives the traversal route from the root to the selected file(s). The 
 #' reason it does not give a path as a string is that the client has no 
 #' knowledge of the file system on the server and can therefore not ensure 
-#' proper formatting. As described above the input variable should be wrapped in
-#' a call to \code{\link{parseFilePaths}} for a more beautiful output.
+#' proper formatting. The \code{\link{parseFilePaths}} function can be used on
+#' the server to format the input variable into a format similar to that 
+#' returned by \code{\link[shiny]{fileInput}}.
+#' 
+#' \strong{Selecting folders}
+#' 
+#' When a folder is selected it will also be available in its respective input
+#' variable as a list giving the traversal route to the selected folder. To
+#' properly format it, feed it into \code{\link{parseDirPath}} and a string with
+#' the full folder path will be returned.
+#' 
+#' \strong{Creating files (saving)}
+#' 
+#' When a new filename is created it will become available in the respective 
+#' input variable and can be formatted with \code{\link{parseSavePath}} into a 
+#' data.frame reminiscent that returned by fileInput. There is no size column 
+#' and the type is only present if the filetype argument is used in 
+#' \code{shinySaveButton}. In that case it will be the name of the chosen type
+#' (not the extension).
+#' 
+#' \strong{Manual markup}
 #' 
 #' For users wanting to design their html markup manually it is very easy to add
 #' a shinyFiles button. The only markup required is:
 #' 
-#' \code{<button id="inputId" type="button" class="shinyFiles btn" data-title="title" data-selecttype="single"|"multiple">label</button>}
+#' \emph{shinyFilesButton}
+#' 
+#' \code{<button id="inputId" type="button" class="shinyFiles btn btn-default" data-title="title" data-selecttype="single"|"multiple">label</button>}
+#' 
+#' \emph{shinyDirButton}
+#' 
+#' \code{<button id="inputId" type="button" class="shinyDirectories btn-default" data-title="title">label</button>}
+#' 
+#' \emph{shinySaveButton}
+#' 
+#' \code{<button id="inputId" type="button" class="shinySave btn-default" data-title="title" data-filetype="[{name: 'type1', ext: ['txt']}, {name: 'type2', ext: ['exe', 'bat']}]">label</button>}
 #' 
 #' where the id tag matches the inputId parameter, the data-title tag matches 
-#' the title parameter, the data-selecttype is either "single" or "multiple" (
-#' the non-logical form of the multiple parameter) and the internal textnode 
-#' mathces the label parameter.
+#' the title parameter, the data-selecttype is either "single" or "multiple" 
+#' (the non-logical form of the multiple parameter) and the internal textnode 
+#' mathces the label parameter. The data-filetype tag is a bit more involved as
+#' it is a json formatted array of objects with the properties 'name' and 'ext'.
+#' 'name' gives the name of the filetype as a string and 'ext' the allowed 
+#' extensions as an array of strings. The non-exported 
+#' \code{\link{formatFiletype}} function can help convert from a named R list 
+#' into the string representation. In the example above "btn-default" is used as
+#' button styling, but this can be changed to any other Bootstrap style. 
 #' 
 #' Apart from this the html document should link to a script with the 
 #' following path 'sF/shinyFiles.js' and a stylesheet with the following path 
@@ -208,14 +251,46 @@ shinyFileChoose <- function(input, id, updateFreq=2000, session, ...) {
 #' these buttons. Additional filetype specific icons can be added with css using
 #' the following style:
 #' 
+#' \preformatted{
 #' .sF-file .sF-file-icon .yourFileExtension{
-#' content: url(path/to/16x16/pixel/png);
+#'     content: url(path/to/16x16/pixel/png);
 #' }
 #' .sF-fileList.sF-icons .sF-file .sF-file-icon .yourFileExtension{
-#' content: url(path/to/32x32/pixel/png);
+#'     content: url(path/to/32x32/pixel/png);
+#' }
 #' }
 #' 
 #' If no large version is specified the small version gets upscaled.
+#' 
+#' \strong{Client side events}
+#' 
+#' If the shiny app uses custom Javascript it is possible to react to selections
+#' directly from the javascript. Once a selection has been made, the button will
+#' fire of the event 'selection' and pass the selection data along with the 
+#' event. To listen for this event you simple add:
+#' 
+#' \preformatted{
+#' $(button).on('selection', function(event, path) {
+#'     // Do something with the paths here
+#' })
+#' }
+#' 
+#' in the same way a 'cancel' event is fired when a user dismisses a selection 
+#' box. In that case, no path is passed on.
+#' 
+#' Outside events the current selection is available as an abject binded to the
+#' button and can be accessed at any time:
+#' 
+#' \preformatted{
+#' // For a shinyFilesButton
+#' $(button).data('files')
+#' 
+#' // For a shinyDirButton
+#' $(button).data('directory')
+#' 
+#' // For a shinySaveButton
+#' $(button).data('file')
+#' }
 #' 
 #' @param id The id matching the \code{\link{shinyFileChoose}}
 #' 
@@ -227,6 +302,22 @@ shinyFileChoose <- function(input, id, updateFreq=2000, session, ...) {
 #' @param multiple A logical indicating whether or not it should be possible to 
 #' select multiple files
 #' 
+#' @param buttonType The Bootstrap button markup used to colour the button. 
+#' Defaults to 'default' for a neutral appearance but can be changed for another
+#' look. The value will be pasted with 'btn-' and added as class.
+#' 
+#' @param class Additional classes added to the button
+#' 
+#' @param filetype A named list of file extensions. The name of each element 
+#' gives the name of the filetype and the content of the element the possible
+#' extensions e.g. \code{list(picture=c('jpg', 'jpeg'))}. The first extension
+#' will be used as default if it is not supplied by the user.
+#' 
+#' @return This function is called for its side effects
+#' 
+#' @rdname shinyFiles-buttons
+#' @name shinyFiles-buttons
+#' 
 #' @family shinyFiles
 #' 
 #' @references The file icons used in the file system navigator is taken from
@@ -236,7 +327,7 @@ shinyFileChoose <- function(input, id, updateFreq=2000, session, ...) {
 #' 
 #' @export
 #' 
-shinyFilesButton <- function(id, label, title, multiple) {
+shinyFilesButton <- function(id, label, title, multiple, buttonType='default', class=NULL) {
     tagList(
         singleton(tags$head(
                 tags$script(src='sF/shinyFiles.js'),
@@ -254,7 +345,7 @@ shinyFilesButton <- function(id, label, title, multiple) {
         tags$button(
             id=id,
             type='button',
-            class='shinyFiles btn',
+            class=paste(c('shinyFiles btn', paste0('btn-', buttonType), class), collapse=' '),
             'data-title'=title,
             'data-selecttype'=ifelse(multiple, 'multiple', 'single'),
             as.character(label)
@@ -262,12 +353,18 @@ shinyFilesButton <- function(id, label, title, multiple) {
         )
 }
 
-#' Convert the output of a file choice to a data frame
+#' Convert the output of a selection to platform specific path(s)
 #' 
 #' This function takes the value of a shinyFiles button input variable and 
-#' converts it to a data frame of the same format as that provided by 
-#' \code{\link[shiny]{fileInput}}. The only caveat is that the MIME type cannot 
-#' be inferred so this will always be an empty string.
+#' converts it to be easier to work with on the server side. In the case of file
+#' selections  and saving the input variable is converted to a data frame (using 
+#' \code{parseFilePaths()} or \code{parseSavePath() respectively}) of the same 
+#' format as that provided by \code{\link[shiny]{fileInput}}. The only caveat 
+#' here is that the MIME type cannot be inferred in file selections so this will 
+#' always be an empty string and new files doesn't have a size so this is left 
+#' out with file saving. In the case of folder selection the input variable is 
+#' converted to a string (using \code{parseDirPath()}) giving the absolute path 
+#' to the selected folder.
 #' 
 #' The use of \code{parseFilePaths} makes it easy to substitute fileInput and 
 #' shinyFiles in your code as code that relies on the values of a file selection
@@ -276,20 +373,23 @@ shinyFilesButton <- function(id, label, title, multiple) {
 #' @param roots The path to the root as specified in the \code{shinyFileChoose()}
 #' call in \code{shinyServer()}
 #' 
-#' @param files The corresponding input variable to be parsed
+#' @param selection The corresponding input variable to be parsed
 #' 
-#' @return A data frame mathcing the format of \code{link[shiny]{fileInput}}
+#' @return A data frame mathcing the format of \code{\link[shiny]{fileInput}}
 #' 
 #' @examples
 #' \dontrun{
 #' ui <- shinyUI(bootstrapPage(
-#'     shinyFilesButton('files', 'File select', 'Please select a file', FALSE)
+#'     shinyFilesButton('files', 'File select', 'Please select a file', FALSE),
+#'     verbatimTextOutput('rawInputValue'),
 #'     verbatimTextOutput('filepaths')
 #' ))
-#' server <- shinyServer(function(input, output) {
-#'     shinyFileChoose(input, 'files', roots=c(wd='.'), 
+#' server <- shinyServer(function(input, output, session) {
+#'     roots = c(wd='.')
+#'     shinyFileChoose(input, 'files', session=session, roots=roots, 
 #'                                     filetypes=c('', '.txt'))
-#'     output$filepaths <- renderText({parseFilePaths('.', input$files)})
+#'     output$rawInputValue <- renderPrint({str(input$files)})
+#'     output$filepaths <- renderPrint({parseFilePaths(roots, input$files)})
 #' })
 #' 
 #' runApp(list(
@@ -298,93 +398,19 @@ shinyFilesButton <- function(id, label, title, multiple) {
 #' ))
 #' }
 #' 
+#' @rdname shinyFiles-parsers
+#' @name shinyFiles-parsers
+#' 
 #' @family shinyFiles
 #' 
 #' @export
 #' 
-parseFilePaths <- function(roots, files) {
-    if (is.null(files) || is.na(files)) return(data.frame(name=character(0), size=numeric(0), type=character(0), datapath=character(0)))
-    files <- sapply(files$files, function(x) {file.path(roots[files$root], do.call('file.path', x))})
+parseFilePaths <- function(roots, selection) {
+    roots <- if(class(roots) == 'function') roots() else roots
+    
+    if (is.null(selection) || is.na(selection)) return(data.frame(name=character(0), size=numeric(0), type=character(0), datapath=character(0)))
+    files <- sapply(selection$files, function(x) {file.path(roots[selection$root], do.call('file.path', x))})
     files <- gsub(pattern='//*', '/', files, perl=TRUE)
     
     data.frame(name=basename(files), size=file.info(files)$size, type='', datapath=files)
-}
-
-#' Run a simple example app using the shinyFiles functionality
-#' 
-#' When the function is invoked a shiny app is started showing a very simple 
-#' setup using shinyFiles. A button summons the dialog box allowing the user to
-#' navigate the R installation directory. To showcase the restrictions parameter
-#' the base package location has been hidden, and is thus inaccecible. A panel 
-#' besides the button shows how the user selection is made accessible to the 
-#' server after parsing with \code{\link{parseFilePaths}}.
-#' 
-#' @family shinyFiles
-#' 
-#' @importFrom shiny runApp
-#' 
-#' @export
-#' 
-shinyFilesExample <- function() {
-    runApp(system.file('example', package='shinyFiles', mustWork=T), display.mode='showcase')
-}
-
-#' Get a list of available volumes
-#' 
-#' This function is intended as an input to the roots parameter in 
-#' \code{\link{fileGetter}} and \code{\link{shinyFileChoose}}. It returns a
-#' function that returns a named vector of available volumes on the system. This
-#' construction makes it dynamic so that a shinyFiles instance reflects new
-#' volumes as they get added (e.g. usb drives). The function takes a single
-#' argument giving names of volumes the developer wants removed from the return
-#' value.
-#' 
-#' @details
-#' The function is OS specific and looks for volumes/drives in different places
-#' depending on the system on which shiny is running.
-#' \describe{
-#'  \item{Windows}{Returns all drives mapped to a letter}
-#'  \item{Mac OSX}{Looks in /Volumes/ and lists the directories therein}
-#'  \item{Linux}{Returns the system root}
-#' }
-#' If the function does not recognize the system under which it is running it 
-#' will throw an error
-#' 
-#' @param exclude A vector of volume names to be excluded from the return value
-#' 
-#' @return A function returning a named vector of available volumes
-#' 
-#' @export
-#' 
-getVolumes <- function(exclude) {
-    if(missing(exclude)) exclude <- NULL
-    
-    function() {
-        osSystem <- Sys.info()['sysname']
-        if (osSystem == 'Darwin') {
-            volumes <- list.files('/Volumes/', full.names=T)
-            names(volumes) <- basename(volumes)
-        } else if (osSystem == 'Linux') {
-            volumes <- c('Computer'='/')
-            media <- list.files('/media/', full.names=T)
-            names(media) <- basename(media)
-            volumes <- c(volumes, media)
-        } else if (osSystem == 'Windows') {
-            volumes <- system('wmic logicaldisk get Caption', intern=T)
-            volumes <- sub(' *\\r$', '', volumes)
-            keep <- !tolower(volumes) %in% c('caption', '')
-            volumes <- volumes[keep]
-            volNames <- system('wmic logicaldisk get VolumeName', intern=T)
-            volNames <- sub(' *\\r$', '', volNames)
-            volNames <- volNames[keep]
-            volNames <- paste0(volNames, ' (', volumes, ')')
-            names(volumes) <- volNames
-        } else {
-            stop('unsupported OS')
-        }
-        if (!is.null(exclude)) {
-            volumes <- volumes[!names(volumes) %in% exclude]
-        }
-        volumes
-    }
 }
