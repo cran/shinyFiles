@@ -1,7 +1,8 @@
 <img src='inst/example/www/logo.png' width='200' style='float: right'/>
 * * *
+![](http://www.r-pkg.org/badges/version/shinyFiles) ![](http://cranlogs.r-pkg.org/badges/shinyFiles) [![Build Status](https://travis-ci.org/thomasp85/shinyFiles.svg?branch=master)](https://travis-ci.org/thomasp85/shinyFiles)
 
-This package extends the functionality of shiny by providing an API for client side access to the server file system. As many shiny apps are run locally this is equivalent to accessing the filesystem of the users own computer, without the overhead of copying files to temporary locations that is tied to the use of fileInput().
+This package extends the functionality of shiny by providing an API for client side access to the server file system. As many shiny apps are run locally this is equivalent to accessing the filesystem of the users own computer, without the overhead of copying files to temporary locations that is tied to the use of `fileInput()`.
 
 The package can be installed from CRAN using `install.packages('shinyFiles')`.
 
@@ -18,7 +19,7 @@ shinyUI(bootstrapPage(
 In the server.R file
 ```R
 shinyServer(function(input, output) {
-    shinyFileChoose(input, 'files', root='.', filetypes=c('', '.txt'))
+    shinyFileChoose(input, 'files', root=c(root='.'), filetypes=c('', 'txt'))
 })
 ```
 

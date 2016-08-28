@@ -4,7 +4,7 @@
 #' 
 #' @noRd
 #' 
-.onAttach <- function(...) {
+.onLoad <- function(...) {
     addResourcePath('sF', system.file('www', package='shinyFiles'))
 }
 
@@ -74,7 +74,8 @@ getVolumes <- function(exclude) {
             volNames <- system('wmic logicaldisk get VolumeName', intern=T)
             volNames <- sub(' *\\r$', '', volNames)
             volNames <- volNames[keep]
-            volNames <- paste0(volNames, ' (', volumes, ')')
+            volNames <- paste0(volNames, ifelse(volNames == "", "", " "))
+            volNames <- paste0(volNames, '(', volumes, ')')
             names(volumes) <- volNames
         } else {
             stop('unsupported OS')
@@ -84,4 +85,17 @@ getVolumes <- function(exclude) {
         }
         volumes
     }
+}
+
+getSession <- function() {
+    session <- shiny::getDefaultReactiveDomain()
+    
+    if (is.null(session)) {
+        stop(paste(
+            "could not find the Shiny session object. This usually happens when a",
+            "shinyjs function is called from a context that wasn't set up by a Shiny session."
+        ))
+    }
+    
+    session
 }

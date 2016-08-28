@@ -59,7 +59,9 @@ fileGetter <- function(roots, restrictions, filetypes, hidden=FALSE) {
         fileInfo$ctime <- format(fileInfo$ctime, format='%Y-%m-%d-%H-%M')
         fileInfo$atime <- format(fileInfo$atime, format='%Y-%m-%d-%H-%M')
         if (!is.null(filetypes)) {
-            fileInfo <- fileInfo[tolower(fileInfo$extension) %in% tolower(filetypes) | fileInfo$isdir,]
+            matchedFiles <- tolower(fileInfo$extension) %in% tolower(filetypes) & fileInfo$extension != ''
+            fileInfo$isdir[matchedFiles] <- FALSE
+            fileInfo <- fileInfo[matchedFiles | fileInfo$isdir,]
         }
         rownames(fileInfo) <- NULL
         breadcrumps <- strsplit(dir, .Platform$file.sep)[[1]]
@@ -129,9 +131,8 @@ fileGetter <- function(roots, restrictions, filetypes, hidden=FALSE) {
 #' ui <- shinyUI(bootstrapPage(
 #'     shinyFilesButton('files', 'File select', 'Please select a file', FALSE)
 #' ))
-#' server <- shinyServer(function(input, output, session) {
-#'     shinyFileChoose(input, 'files', session=session, 
-#'                     roots=c(wd='.'), filetypes=c('', '.txt'))
+#' server <- shinyServer(function(input, output) {
+#'     shinyFileChoose(input, 'files', roots=c(wd='.'), filetypes=c('', 'txt'))
 #' })
 #' 
 #' runApp(list(
@@ -149,7 +150,7 @@ fileGetter <- function(roots, restrictions, filetypes, hidden=FALSE) {
 #' 
 #' @export
 #' 
-shinyFileChoose <- function(input, id, updateFreq=2000, session, ...) {
+shinyFileChoose <- function(input, id, updateFreq=2000, session = getSession(), ...) {
     fileGet <- do.call('fileGetter', list(...))
     currentDir <- list()
     
@@ -384,10 +385,9 @@ shinyFilesButton <- function(id, label, title, multiple, buttonType='default', c
 #'     verbatimTextOutput('rawInputValue'),
 #'     verbatimTextOutput('filepaths')
 #' ))
-#' server <- shinyServer(function(input, output, session) {
+#' server <- shinyServer(function(input, output) {
 #'     roots = c(wd='.')
-#'     shinyFileChoose(input, 'files', session=session, roots=roots, 
-#'                                     filetypes=c('', '.txt'))
+#'     shinyFileChoose(input, 'files', roots=roots, filetypes=c('', 'txt'))
 #'     output$rawInputValue <- renderPrint({str(input$files)})
 #'     output$filepaths <- renderPrint({parseFilePaths(roots, input$files)})
 #' })

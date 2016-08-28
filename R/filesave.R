@@ -12,8 +12,8 @@ NULL
 #' ui <- shinyUI(bootstrapPage(
 #'     shinySaveButton('save', 'Save', 'Save as...')
 #' ))
-#' server <- shinyServer(function(input, output, session) {
-#'     shinyFileSave(input, 'save', session=session, roots=c(wd='.'))
+#' server <- shinyServer(function(input, output) {
+#'     shinyFileSave(input, 'save', roots=c(wd='.'))
 #' })
 #' 
 #' runApp(list(
@@ -26,7 +26,7 @@ NULL
 #' 
 #' @importFrom shiny observe invalidateLater
 #' 
-shinyFileSave <- function(input, id, updateFreq=2000, session, ...) {
+shinyFileSave <- function(input, id, updateFreq=2000, session=getSession(), ...) {
     fileGet <- do.call('fileGetter', list(...))
     dirCreate <- do.call('dirCreator', list(...))
     currentDir <- list()
@@ -123,6 +123,7 @@ parseSavePath <- function(roots, selection) {
     
     location <- do.call('file.path', as.list(selection$path))
     savefile <- file.path(root, location, selection$name)
+    savefile <- gsub(pattern='//*', '/', savefile, perl=TRUE)
     
     data.frame(name=selection$name, type=selection$type, datapath=savefile)
 }

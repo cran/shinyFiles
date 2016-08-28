@@ -167,9 +167,8 @@ dirCreator <- function(roots, ...) {
 #' ui <- shinyUI(bootstrapPage(
 #'     shinyDirButton('folder', 'Folder select', 'Please select a folder', FALSE)
 #' ))
-#' server <- shinyServer(function(input, output, session) {
-#'     shinyDirChoose(input, 'folder', session=session, 
-#'                     roots=c(wd='.'), filetypes=c('', '.txt'))
+#' server <- shinyServer(function(input, output) {
+#'     shinyDirChoose(input, 'folder', roots=c(wd='.'), filetypes=c('', 'txt'))
 #' })
 #' 
 #' runApp(list(
@@ -182,7 +181,7 @@ dirCreator <- function(roots, ...) {
 #' 
 #' @importFrom shiny observe invalidateLater
 #' 
-shinyDirChoose <- function(input, id, updateFreq=2000, session, ...) {
+shinyDirChoose <- function(input, id, updateFreq=2000, session=getSession(), ...) {
     dirGet <- do.call('dirGetter', list(...))
     fileGet <- do.call('fileGetter', list(...))
     dirCreate <- do.call('dirCreator', list(...))
@@ -266,5 +265,5 @@ parseDirPath <- function(roots, selection) {
     root <- currentRoots[selection$root]
     
     location <- do.call('file.path', as.list(selection$path))
-    file.path(root, location)
+    gsub(pattern='//*', '/', file.path(root, location), perl=TRUE)
 }
