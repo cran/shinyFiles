@@ -1,10 +1,10 @@
-c74455685f146eeae386d4ac3bcb5c00 *DESCRIPTION
-55d939270315a49f33a4616f02a2a893 *NAMESPACE
-44899ebbbf32d8775125e388b145af97 *NEWS.md
+b122f938c31bbb4acb7dc7e5e850ef93 *DESCRIPTION
+375afc9fd8f2c90ecebbb157e370fd7e *NAMESPACE
+399d133698162433aa6e52868a20da42 *NEWS.md
 344039f6d948a61df3f634d546db7786 *R/aaa.R
-12f8632f1a5bfbf24c370dbfd7fde5ff *R/dirchoose.R
-cc33ed7389c6223c586950cba24efad0 *R/filechoose.R
-1c3fbd4b2ac12b9da76c9a653cacacdf *R/filesave.R
+b9d1cc9cda226568d968c65f7d0bde62 *R/dirchoose.R
+c57c3e6ecee8291ffd6a4a2fd7b07117 *R/filechoose.R
+eb92feebcc0b1d1bc78dc7b30f2885b5 *R/filesave.R
 64c156db666c436632b4d2a9bee5f509 *R/shinyFiles-package.R
 a51494a2bbeb4001f70e53a2bd7cf636 *README.md
 5701e436528f688189312a704fdaa5fa *inst/example/server.R
@@ -278,8 +278,8 @@ c9bee21e527a0af22d73647d4a8b20d9 *inst/www/icons/Icons32x32/page_white_vector.pn
 871d493252e62fda202cfaf1bad3cdb2 *inst/www/icons/Icons32x32/page_word.png
 59259601c23e4ba5212daa9f03ff31a3 *inst/www/icons/Icons32x32/r-data-formats.png
 aafd09242ac4ef0ddc24d8aae49b97be *inst/www/icons/readme-fatcow.txt
-bd5537e104b7c31d26c14783afc24ae2 *inst/www/shinyFiles.js
-021d9e42824c8d93febb56868ce9c0fe *inst/www/styles.css
+ee06933d58cca4d6f6f702c57c20e705 *inst/www/shinyFiles.js
+51fe90606a35c5516b80f6fd76915821 *inst/www/styles.css
 1ca1b2f197fde46f54b2d9a703022a08 *man/dirCreator.Rd
 41bda193fb0a0f231dd1078b3c090300 *man/dirGetter.Rd
 23d773f2b023fcc4a281798cea09fcbd *man/figures/logo.png
@@ -288,7 +288,7 @@ bd5537e104b7c31d26c14783afc24ae2 *inst/www/shinyFiles.js
 b61000e4eb2ec78f5ed0739c79cee7b3 *man/getVolumes.Rd
 9adb96c3183a52bf060c2e7eb6500a2b *man/shinyFiles-buttons.Rd
 853dc74ea53cbaf2807a3ff43016c308 *man/shinyFiles-observers.Rd
-37fdbaa1cb5ab9376c41c3996bb59ddf *man/shinyFiles-package.Rd
+c273f5fe828ba1e9263a188c6b3e9a30 *man/shinyFiles-package.Rd
 d61cd3482465eb9a9fc35a1d88ee465e *man/shinyFiles-parsers.Rd
 429b049daa7fdaa092bd39dd3ffedc69 *man/shinyFilesExample.Rd
 6d5062a8b014503379294d9909941ba8 *man/traverseDirs.Rd

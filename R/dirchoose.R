@@ -25,13 +25,13 @@ NULL
 #'
 #' @return A list of the same format as 'tree', but with updated values to
 #' reflect the current file system state.
-#' 
-#' @importFrom fs path dir_exists dir_ls file_info path_file
+#'
+#' @importFrom fs path dir_ls file_info path_file
 #'
 traverseDirs <- function(tree, root, restrictions, hidden) {
   location <- path(root, tree$name)
-  if (!dir_exists(location)) return(NULL)
-  
+  if (!dir.exists(location)) return(NULL)
+
   files <- suppressWarnings(dir_ls(location, all = hidden, fail = FALSE))
 
   if (!is.null(restrictions) && length(files) != 0) {
@@ -46,9 +46,8 @@ traverseDirs <- function(tree, root, restrictions, hidden) {
     }
     files <- files[keep]
   }
-  
-  fileInfo <- suppressWarnings(file_info(files, fail = FALSE))
-  folders <- path_file(files[fileInfo$type %in% c("directory", "symlink")])
+
+  folders <- path_file(files[dir.exists(files)])
 
   if (length(folders) == 0) {
     tree$empty <- TRUE
@@ -128,7 +127,7 @@ dirGetter <- function(roots, restrictions, filetypes, hidden=FALSE) {
     if (is.null(root)) root <- names(currentRoots)[1]
 
     tree <- traverseDirs(tree, currentRoots[root], restrictions, hidden)
-    
+
     list(
       tree = tree,
       rootNames = I(names(currentRoots)),
@@ -154,7 +153,7 @@ dirGetter <- function(roots, restrictions, filetypes, hidden=FALSE) {
 #'
 #' @return A function that creates directories based on the information returned
 #' by the client.
-#' 
+#'
 #' @importFrom fs path dir_create
 #'
 dirCreator <- function(roots, ...) {
@@ -183,7 +182,7 @@ dirCreator <- function(roots, ...) {
 #' ))
 #' }
 #'
-#' @importFrom shiny observe invalidateLater req
+#' @importFrom shiny observe invalidateLater req observeEvent
 #'
 #' @export
 #'
@@ -196,8 +195,8 @@ shinyDirChoose <- function(input, id, updateFreq = 0, session=getSession(),
   currentFiles <- NULL
   lastDirCreate <- NULL
   clientId <- session$ns(id)
-  
-  observe({
+
+  sendDirectoryData <- function(message) {
     req(input[[id]])
     tree <- input[[paste0(id, "-modal")]]
     createDir <- input[[paste0(id, "-newDir")]]
@@ -221,12 +220,22 @@ shinyDirChoose <- function(input, id, updateFreq = 0, session=getSession(),
       newDir$contentPath <- as.list(files$dir)
       files$dir <- paste0(files$dir, collapse = "/")
       content <- do.call(fileGet, files)
-      newDir$content <- content$files[, c("filename", "extension", "isdir", "size"), drop = FALSE]
+      newDir$content <- content$files
       newDir$writable <- content$writable
     }
     currentDir <<- newDir
-    session$sendCustomMessage("shinyDirectories", list(id = clientId, dir = newDir))
+    session$sendCustomMessage(message, list(id = clientId, dir = newDir))
     if (updateFreq > 0) invalidateLater(updateFreq, session)
+  }
+
+  observe({
+    sendDirectoryData("shinyDirectories")
+  })
+
+  observeEvent(input[[paste0(id, "-refresh")]], {
+    if (!is.null(input[[paste0(id, "-refresh")]])) {
+      sendDirectoryData("shinyDirectories-refresh")
+    }
   })
 }
 #' @rdname shinyFiles-buttons
@@ -268,7 +277,7 @@ shinyDirButton <- function(id, label, title, buttonType="default", class=NULL, i
 #'
 #' @importFrom htmltools tagList singleton tags
 #' @importFrom shiny restoreInput
-#' 
+#'
 #' @export
 #'
 shinyDirLink <- function(id, label, title, class=NULL, icon=NULL, style=NULL) {
@@ -301,7 +310,7 @@ shinyDirLink <- function(id, label, title, class=NULL, icon=NULL, style=NULL) {
 #' @rdname shinyFiles-parsers
 #'
 #' @importFrom fs path
-#' 
+#'
 #' @export
 #'
 parseDirPath <- function(roots, selection) {
