@@ -52,6 +52,22 @@ shinyFileSave <- function(input, id, updateFreq=0, session=getSession(),
     if (isTRUE(newDir$exist)) {
       currentDir <<- newDir
       session$sendCustomMessage(message, list(id = clientId, dir = newDir))
+    }else{
+      #first, back up a directory and try again; maybe the user is trying to save as a new filename
+      savedDir = dir$dir
+      selectedFile = sub(".*/(.*)$","\\1",dir$dir)
+      #shorten the directory (include the slash at the end to make sure we don't look for a non-directory)
+      dir$dir = sub("(.*/).*$","\\1",dir$dir)
+      newDir <- do.call(fileGet, dir)
+      if (isTRUE(newDir$exist)) { #backing up once, we find a valid directory
+        newDir$selectedFile <- selectedFile
+        currentDir <<- newDir
+        session$sendCustomMessage(message, list(id = clientId, dir = newDir))
+      }else{
+        #even backing up, the directory is not valid
+        currentDir$exist = FALSE
+        session$sendCustomMessage(message, list(id = clientId, dir = currentDir))
+      }
     }
     if (updateFreq > 0) invalidateLater(updateFreq, session)
   }
@@ -75,9 +91,10 @@ shinyFileSave <- function(input, id, updateFreq=0, session=getSession(),
 #' @export
 #'
 shinySaveButton <- function(id, label, title, filename="", filetype, 
-                            buttonType="default", class=NULL, icon=NULL, style=NULL) {
+                            buttonType="default", class=NULL, icon=NULL, style=NULL, viewtype="detail") {
   if (missing(filetype)) filetype <- NA
   filetype <- formatFiletype(filetype)
+  viewtype <- if (length(viewtype) > 0 && viewtype %in% c("detail", "list", "icon")) viewtype else "detail"
 
   value <- restoreInput(id = id, default = NULL)
   tagList(
@@ -103,6 +120,7 @@ shinySaveButton <- function(id, label, title, filename="", filetype,
       "data-filetype" = filetype,
       "data-filename" = filename,
       "data-val" = value,
+      "data-view" = paste0("sF-btn-", viewtype),
       list(icon, label)
     )
   )
@@ -114,9 +132,10 @@ shinySaveButton <- function(id, label, title, filename="", filetype,
 #'
 #' @export
 #'
-shinySaveLink <- function(id, label, title, filename="", filetype, class=NULL, icon=NULL, style=NULL) {
+shinySaveLink <- function(id, label, title, filename="", filetype, class=NULL, icon=NULL, style=NULL, viewtype="detail") {
   if (missing(filetype)) filetype <- NA
   filetype <- formatFiletype(filetype)
+  viewtype <- if (length(viewtype) > 0 && viewtype %in% c("detail", "list", "icon")) viewtype else "detail"
 
   value <- restoreInput(id = id, default = NULL)
   tagList(
@@ -142,6 +161,7 @@ shinySaveLink <- function(id, label, title, filename="", filetype, class=NULL, i
       "data-filetype" = filetype,
       "data-filename" = filename,
       "data-val" = value,
+      "data-view" = paste0("sF-btn-", viewtype),
       list(icon, label)
     )
   )
