@@ -22,12 +22,14 @@ NULL
 #' ))
 #' }
 #'
-#' @importFrom shiny observe invalidateLater req observeEvent
+#' @importFrom shiny observe invalidateLater req observeEvent showNotification p
 #' 
 #' @export
 #'
-shinyFileSave <- function(input, id, updateFreq=0, session=getSession(),
-                          defaultPath="", defaultRoot=NULL, ...) {
+shinyFileSave <- function(
+  input, id, updateFreq = 0, session = getSession(),
+  defaultPath = "", defaultRoot = NULL, allowDirCreate = TRUE, ...
+) {
   fileGet <- do.call(fileGetter, list(...))
   dirCreate <- do.call(dirCreator, list(...))
   currentDir <- list()
@@ -38,10 +40,19 @@ shinyFileSave <- function(input, id, updateFreq=0, session=getSession(),
     req(input[[id]])
     dir <- input[[paste0(id, "-modal")]]
     createDir <- input[[paste0(id, "-newDir")]]
+    
+    # Show a notification if a user is trying to create a 
+    # new directory when that option has been disabled 
     if (!identical(createDir, lastDirCreate)) {
-      dirCreate(createDir$name, createDir$path, createDir$root)
-      lastDirCreate <<- createDir
+      if (allowDirCreate) {
+        dirCreate(createDir$name, createDir$path, createDir$root)
+        lastDirCreate <<- createDir
+      } else {
+        shiny::showNotification(shiny::p('Creating directories has been disabled.'), type = 'error')
+        lastDirCreate <<- createDir
+      }
     }
+    
     if (is.null(dir) || is.na(dir)) {
       dir <- list(dir = defaultPath, root = defaultRoot)
     } else {
@@ -90,8 +101,10 @@ shinyFileSave <- function(input, id, updateFreq=0, session=getSession(),
 #'
 #' @export
 #'
-shinySaveButton <- function(id, label, title, filename="", filetype, 
-                            buttonType="default", class=NULL, icon=NULL, style=NULL, viewtype="detail") {
+shinySaveButton <- function(
+  id, label, title, filename="", filetype,  buttonType="default", 
+  class=NULL, icon=NULL, style=NULL, viewtype="detail", ...
+) {
   if (missing(filetype)) filetype <- NA
   filetype <- formatFiletype(filetype)
   viewtype <- if (length(viewtype) > 0 && viewtype %in% c("detail", "list", "icon")) viewtype else "detail"
@@ -121,7 +134,8 @@ shinySaveButton <- function(id, label, title, filename="", filetype,
       "data-filename" = filename,
       "data-val" = value,
       "data-view" = paste0("sF-btn-", viewtype),
-      list(icon, label)
+      list(icon, label),
+      ...
     )
   )
 }
@@ -132,7 +146,10 @@ shinySaveButton <- function(id, label, title, filename="", filetype,
 #'
 #' @export
 #'
-shinySaveLink <- function(id, label, title, filename="", filetype, class=NULL, icon=NULL, style=NULL, viewtype="detail") {
+shinySaveLink <- function(
+  id, label, title, filename="", filetype, 
+  class=NULL, icon=NULL, style=NULL, viewtype="detail", ...
+) {
   if (missing(filetype)) filetype <- NA
   filetype <- formatFiletype(filetype)
   viewtype <- if (length(viewtype) > 0 && viewtype %in% c("detail", "list", "icon")) viewtype else "detail"
@@ -162,7 +179,8 @@ shinySaveLink <- function(id, label, title, filename="", filetype, class=NULL, i
       "data-filename" = filename,
       "data-val" = value,
       "data-view" = paste0("sF-btn-", viewtype),
-      list(icon, label)
+      list(icon, label),
+      ...
     )
   )
 }

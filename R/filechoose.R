@@ -33,7 +33,8 @@ NULL
 #' returns a list of files to be passed on to shiny
 #'
 #' @importFrom tools file_ext
-#' @importFrom fs path file_access file_exists dir_ls file_info path_file path_ext
+#' @importFrom fs path file_access file_exists dir_ls file_info path_file 
+#'   path_ext path_join path_norm path_has_parent
 #' @importFrom tibble as_tibble
 #'
 fileGetter <- function(roots, restrictions, filetypes, pattern, hidden = FALSE) {
@@ -55,18 +56,34 @@ fileGetter <- function(roots, restrictions, filetypes, pattern, hidden = FALSE) 
     if (is.null(names(currentRoots))) stop("Roots must be a named vector or a function returning one")
     if (is.null(root)) root <- names(currentRoots)[1]
     
-    fulldir <- path(currentRoots[root], paste0(dir, collapse = "/"))
-    selectedFile = ""
-    if(file.exists(fulldir) && !dir.exists(fulldir)){
-      #dir is a normal file, not a directory
-      #get the filename, and use it as the selectedFile
-      selectedFile = sub(".*/(.*)$","\\1",fulldir)
-      #shorten the directory
-      fulldir = sub("(.*)/.*$","\\1",fulldir)
-      #dir also needs shortened for breadcrumps
-      dir = sub("(.*)/.*$","\\1",dir)
+    fulldir <- path_join(c(currentRoots[root], dir))
+    testdir <- try(path_norm(fulldir), silent = TRUE) 
+
+    if (inherits(testdir, "try-error")) {
+      fulldir <- path(currentRoots[root])
+      dir <- ""
+    } else {
+      if (Sys.info()["sysname"] != "Windows") {
+        testdir <- gsub("/{2,}", "/", testdir)
+      }
+      if (path_has_parent(testdir, currentRoots[root])) {
+        fulldir <- testdir
+      } else {
+        fulldir <- path(currentRoots[root])
+        dir <- ""
+      }
     }
     
+    selectedFile <- ""
+    if(file.exists(fulldir) && !dir.exists(fulldir)){
+      # dir is a normal file, not a directory
+      # get the filename, and use it as the selectedFile
+      selectedFile = sub(".*/(.*)$", "\\1", fulldir)
+      # shorten the directory
+      fulldir = sub("(.*)/.*$", "\\1", fulldir)
+      # dir also needs shortened for breadcrumbs
+      dir = sub("(.*)/.*$", "\\1", dir)
+    }
     
     writable <- as.logical(file_access(fulldir, "write"))
     files <- suppressWarnings(dir_ls(fulldir, all = hidden, fail = FALSE))
@@ -160,8 +177,10 @@ fileGetter <- function(roots, restrictions, filetypes, pattern, hidden = FALSE) 
 #' can be either `'wd'` or `'home'`.
 #'
 #' @param defaultPath The default relative path specified given the `defaultRoot`.
+#' 
+#' @param allowDirCreate Logical that indicates if creating new directories by the user is allowed.
 #'
-#' @param ... Arguments to be passed on to [fileGetter()] or [dirGetter()]
+#' @param ... Arguments to be passed on to [fileGetter()] or [dirGetter()].
 #'
 #' @return A reactive observer that takes care of the server side logic of the
 #' filesystem connection.
@@ -371,7 +390,7 @@ shinyFileChoose <- function(input, id, updateFreq = 0, session = getSession(),
 #'
 #' @param class Additional classes added to the button
 #'
-#' @param icon An optional \href{http://shiny.rstudio.com/reference/shiny/latest/icon.html}{icon} to appear on the button.
+#' @param icon An optional \href{https://shiny.rstudio.com/reference/shiny/latest/icon.html}{icon} to appear on the button.
 #' 
 #' @param style Additional styling added to the button (e.g., "margin-top: 25px;")
 #' 
@@ -381,6 +400,8 @@ shinyFileChoose <- function(input, id, updateFreq = 0, session = getSession(),
 #' gives the name of the filetype and the content of the element the possible
 #' extensions e.g. `list(picture=c('jpg', 'jpeg'))`. The first extension
 #' will be used as default if it is not supplied by the user.
+#' 
+#' @param ... Named attributes to be applied to the button or link (e.g., 'onclick')
 #'
 #' @return This function is called for its side effects
 #'
@@ -390,14 +411,17 @@ shinyFileChoose <- function(input, id, updateFreq = 0, session = getSession(),
 #' @family shinyFiles
 #'
 #' @references The file icons used in the file system navigator is taken from
-#' FatCows Farm-Fresh Web Icons (<http://www.fatcow.com/free-icons>)
+#' FatCows Farm-Fresh Web Icons (<https://www.fatcow.com/free-icons>)
 #'
 #' @importFrom htmltools tagList singleton tags
 #' @importFrom shiny restoreInput
 #'
 #' @export
 #'
-shinyFilesButton <- function(id, label, title, multiple, buttonType="default", class=NULL, icon=NULL, style=NULL, viewtype="detail") {
+shinyFilesButton <- function(
+  id, label, title, multiple, buttonType="default", 
+  class=NULL, icon=NULL, style=NULL, viewtype="detail", ...
+) {
   value <- restoreInput(id = id, default = NULL)
   viewtype <- if (length(viewtype) > 0 && viewtype %in% c("detail", "list", "icon")) viewtype else "detail"
   tagList(
@@ -423,7 +447,8 @@ shinyFilesButton <- function(id, label, title, multiple, buttonType="default", c
       "data-selecttype" = ifelse(multiple, "multiple", "single"),
       "data-val" = value,
       "data-view" = paste0("sF-btn-", viewtype),
-      list(icon, label)
+      list(icon, label),
+      ...
     )
   )
 }
@@ -435,7 +460,10 @@ shinyFilesButton <- function(id, label, title, multiple, buttonType="default", c
 #'
 #' @export
 #'
-shinyFilesLink <- function(id, label, title, multiple, class=NULL, icon=NULL, style=NULL, viewtype="detail") {
+shinyFilesLink <- function(
+  id, label, title, multiple, class=NULL, icon=NULL, style=NULL, 
+  viewtype="detail", ...
+) {
   value <- restoreInput(id = id, default = NULL)
   viewtype <- if (length(viewtype) > 0 && viewtype %in% c("detail", "list", "icon")) viewtype else "detail"
   tagList(
@@ -461,7 +489,8 @@ shinyFilesLink <- function(id, label, title, multiple, class=NULL, icon=NULL, st
       "data-selecttype" = ifelse(multiple, "multiple", "single"),
       "data-val" = value,
       "data-view" = paste0("sF-btn-", viewtype),
-      list(icon, label)
+      list(icon, label),
+      ...
     )
   )
 }

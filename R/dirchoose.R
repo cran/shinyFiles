@@ -182,12 +182,14 @@ dirCreator <- function(roots, ...) {
 #' ))
 #' }
 #'
-#' @importFrom shiny observe invalidateLater req observeEvent
+#' @importFrom shiny observe invalidateLater req observeEvent showNotification p
 #'
 #' @export
 #'
-shinyDirChoose <- function(input, id, updateFreq = 0, session=getSession(),
-                           defaultPath="", defaultRoot=NULL, ...) {
+shinyDirChoose <- function(
+  input, id, updateFreq = 0, session = getSession(),
+  defaultPath = "", defaultRoot = NULL, allowDirCreate = TRUE, ...
+) {
   dirGet <- do.call(dirGetter, list(...))
   fileGet <- do.call(fileGetter, list(...))
   dirCreate <- do.call(dirCreator, list(...))
@@ -200,11 +202,18 @@ shinyDirChoose <- function(input, id, updateFreq = 0, session=getSession(),
     req(input[[id]])
     tree <- input[[paste0(id, "-modal")]]
     createDir <- input[[paste0(id, "-newDir")]]
-    if (!identical(createDir, lastDirCreate)) {
-      dirCreate(createDir$name, createDir$path, createDir$root)
-      lastDirCreate <<- createDir
-    }
     
+    # Show a notification if a user is trying to create a 
+    # new directory when that option has been disabled 
+    if (!identical(createDir, lastDirCreate)) {
+      if (allowDirCreate) {
+        dirCreate(createDir$name, createDir$path, createDir$root)
+        lastDirCreate <<- createDir
+      } else {
+        shiny::showNotification(shiny::p('Creating directories has been disabled.'), type = 'error')
+        lastDirCreate <<- createDir
+      }
+    }
     
     exist <- TRUE
     if (is.null(tree) || is.na(tree)) {
@@ -252,7 +261,10 @@ shinyDirChoose <- function(input, id, updateFreq = 0, session=getSession(),
 #'
 #' @export
 #'
-shinyDirButton <- function(id, label, title, buttonType="default", class=NULL, icon=NULL, style=NULL) {
+shinyDirButton <- function(
+  id, label, title, buttonType="default", 
+  class=NULL, icon=NULL, style=NULL, ...
+) {
   value <- restoreInput(id = id, default = NULL)
   tagList(
     singleton(tags$head(
@@ -275,7 +287,8 @@ shinyDirButton <- function(id, label, title, buttonType="default", class=NULL, i
       style = style,
       "data-title" = title,
       "data-val" = value,
-      list(icon, as.character(label))
+      list(icon, as.character(label)),
+      ...
     )
   )
 }
@@ -287,7 +300,7 @@ shinyDirButton <- function(id, label, title, buttonType="default", class=NULL, i
 #'
 #' @export
 #'
-shinyDirLink <- function(id, label, title, class=NULL, icon=NULL, style=NULL) {
+shinyDirLink <- function(id, label, title, class=NULL, icon=NULL, style=NULL, ...) {
   value <- restoreInput(id = id, default = NULL)
   tagList(
     singleton(tags$head(
@@ -310,7 +323,8 @@ shinyDirLink <- function(id, label, title, class=NULL, icon=NULL, style=NULL) {
       style = style,
       "data-title" = title,
       "data-val" = value,
-      list(icon, as.character(label))
+      list(icon, as.character(label)),
+      ...
     )
   )
 }
