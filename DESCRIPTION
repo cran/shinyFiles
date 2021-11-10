@@ -1,7 +1,7 @@
 Package: shinyFiles
 Type: Package
 Title: A Server-Side File System Viewer for Shiny
-Version: 0.9.0
+Version: 0.9.1
 Authors@R: 
     c(person(given = "Thomas Lin",
              family = "Pedersen",
@@ -32,12 +32,13 @@ Collate: 'aaa.R' 'filechoose.R' 'dirchoose.R' 'filesave.R'
 RoxygenNote: 7.1.1
 URL: https://github.com/thomasp85/shinyFiles
 BugReports: https://github.com/thomasp85/shinyFiles/issues
+Suggests: covr
 NeedsCompilation: no
-Packaged: 2020-11-09 15:43:38 UTC; thomas
+Packaged: 2021-11-10 11:34:56 UTC; thomas
 Author: Thomas Lin Pedersen [cre, aut]
     (<https://orcid.org/0000-0002-5147-4711>),
   Vincent Nijs [aut],
   Thomas Schaffner [aut],
   Eric Nantz [aut]
 Repository: CRAN
-Date/Publication: 2020-11-09 16:40:02 UTC
+Date/Publication: 2021-11-10 12:00:02 UTC
