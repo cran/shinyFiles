@@ -1,12 +1,12 @@
-dba4c85f08b22c6007e5670fdf8eff8a *DESCRIPTION
+03a49c0ada0d940e1c241bb0de927ad4 *DESCRIPTION
 1333ad38e92bcfa453b9fac8fb553bd2 *NAMESPACE
-0deaaaa331aff1f94e0c7aa7debfcae6 *NEWS.md
+bdfad317e3db946ac3f40a2b2480b85f *NEWS.md
 340ef222cb016b7e27ed68ba8dd37a84 *R/aaa.R
 c59f06b2dbe517171a96161b7e425722 *R/dirchoose.R
 f854935dbbb0cfde200c273d8764122b *R/filechoose.R
 03c396d02d55ff68f607749677211146 *R/filesave.R
 64c156db666c436632b4d2a9bee5f509 *R/shinyFiles-package.R
-736472025709db073024daaac9344f5f *README.md
+96dab3e73c5e31e9387298a1cf2e959e *README.md
 196c28cceccf4e4482f349d17fc39e4d *inst/example/DESCRIPTION
 d2becede50f6ebfeb5a3763cbd36a15b *inst/example/server.R
 44b7ab5dd9deb891f1ced542b1733194 *inst/example/ui.R
@@ -288,8 +288,8 @@ a4537b65269d4610f24339d1e2e7bc76 *inst/www/icons/readme-fatcow.txt
 4a694cc46ca8d11032e302e2f4dd0ea8 *man/formatFiletype.Rd
 b61000e4eb2ec78f5ed0739c79cee7b3 *man/getVolumes.Rd
 30b94fd9c7917f9493e432a07e8b2d58 *man/shinyFiles-buttons.Rd
-f8ed4b6947abd58d9a46fe2070f823b7 *man/shinyFiles-observers.Rd
-f34db997835d1922dc383b329ad1a884 *man/shinyFiles-package.Rd
+c2b769e0478d032d62ff4790da5e27e5 *man/shinyFiles-observers.Rd
+d7f33867dc919ed838468b7c35e38e9a *man/shinyFiles-package.Rd
 283afff2dd4bd365c9df1910fa2729b6 *man/shinyFiles-parsers.Rd
 518b2189e160a6237a463aa1046bd9df *man/shinyFilesExample.Rd
 6d5062a8b014503379294d9909941ba8 *man/traverseDirs.Rd
